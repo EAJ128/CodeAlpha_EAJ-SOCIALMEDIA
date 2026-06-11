@@ -1,0 +1,6 @@
+{
+  "name": "EAJ Social",
+  "description": "A modern full-stack social media platform featuring glassmorphism design, real-time notifications, rich profile editing, and robust post engagement.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

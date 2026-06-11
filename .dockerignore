@@ -1,0 +1,27 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build output (rebuilt inside the image)
+dist
+
+# Local secrets and runtime data
+.env*
+!.env.example
+database.sqlite
+public/uploads
+
+# Git and editor
+.git
+.gitignore
+.cursor
+.vscode
+*.md
+!README.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test / coverage
+coverage
