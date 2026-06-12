@@ -9,7 +9,7 @@ import { Settings, ShieldAlert, CheckCircle, Users, Mail, Lock, Sun, Moon, Alert
 import { Link, useNavigate } from 'react-router-dom';
 
 export const SettingsPage: React.FC = () => {
-  const { user, token, logout, darkMode, toggleDarkMode, updateCurrentUser } = useAuth();
+  const { user, token, logout, darkMode, toggleDarkMode, updateCurrentUser, authFetch } = useAuth();
   const navigate = useNavigate();
 
   // Settings states
@@ -20,6 +20,16 @@ export const SettingsPage: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
+
+  // Sync inputs when context user changes or loads
+  React.useEffect(() => {
+    if (user) {
+      setEmail(user.email || '');
+      setUsername(user.username || '');
+    }
+  }, [user]);
+
+  const isUnchanged = email === (user?.email || '') && username === (user?.username || '') && !newPassword;
 
   // Deletion states
   const [showDeletionBlock, setShowDeletionBlock] = useState(false);
@@ -40,12 +50,9 @@ export const SettingsPage: React.FC = () => {
     setUpdateSuccess(null);
 
     try {
-      const res = await fetch('/api/settings/update', {
+      const res = await authFetch('/api/settings/update', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
           username,
@@ -94,12 +101,9 @@ export const SettingsPage: React.FC = () => {
     setDeletionError(null);
 
     try {
-      const res = await fetch('/api/settings/delete-account', {
+      const res = await authFetch('/api/settings/delete-account', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword: deletionPassword }),
       });
 
@@ -264,8 +268,8 @@ export const SettingsPage: React.FC = () => {
           <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
             <button
               type="submit"
-              disabled={isUpdating}
-              className="px-6 py-2.5 hover:opacity-95 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm rounded-xl hover:shadow-lg transition cursor-pointer flex items-center gap-1.5"
+              disabled={isUpdating || isUnchanged}
+              className="px-6 py-2.5 hover:opacity-95 bg-linear-to-r from-indigo-600 to-purple-600 text-white font-bold text-xs sm:text-sm rounded-xl hover:shadow-lg transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isUpdating ? (
                 <>

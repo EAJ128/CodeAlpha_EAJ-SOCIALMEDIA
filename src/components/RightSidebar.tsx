@@ -23,7 +23,7 @@ interface TrendingTag {
 }
 
 export const RightSidebar: React.FC = () => {
-  const { user, token } = useAuth();
+  const { user, token, authFetch } = useAuth();
   const [suggestions, setSuggestions] = useState<SuggestedUser[]>([]);
   const [trending, setTrending] = useState<TrendingTag[]>([]);
   const [loadingFollow, setLoadingFollow] = useState<number | null>(null);
@@ -55,9 +55,8 @@ export const RightSidebar: React.FC = () => {
 
     try {
       const endpoint = `/api/users/${isFollowing ? 'unfollow' : 'follow'}/${personId}`;
-      const res = await fetch(endpoint, {
+      const res = await authFetch(endpoint, {
         method: isFollowing ? 'DELETE' : 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
         const data = await res.json();

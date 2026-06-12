@@ -18,6 +18,16 @@ import { Notifications } from './pages/Notifications';
 import { SettingsPage } from './pages/Settings';
 import { Bell } from 'lucide-react';
 
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, token } = useAuth();
+  return token && user ? <>{children}</> : <Navigate to="/login" replace />;
+};
+
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, token } = useAuth();
+  return token && user ? <Navigate to="/" replace /> : <>{children}</>;
+};
+
 function AppLayout() {
   const [sidebarIsOpen, setSidebarIsOpen] = useState(false);
   const { user, notifications } = useAuth();
@@ -68,11 +78,32 @@ function AppLayout() {
         <main id="app-main-content" className="flex-1 overflow-y-auto min-w-0 bg-slate-100 dark:bg-slate-950">
           <Routes>
             {/* Feeds */}
-            <Route path="/" element={<Feed />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <Feed />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Authentication Gates */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route
+              path="/login"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              }
+            />
 
             {/* Users Profiles */}
             <Route path="/profile/:id" element={<Profile />} />

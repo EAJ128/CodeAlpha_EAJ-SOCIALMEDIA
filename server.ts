@@ -262,6 +262,42 @@ app.post('/api/auth/logout', (req, res) => {
   res.json({ message: 'Logged out successfully.' });
 });
 
+// Token Refresh Endpoint
+app.post('/api/auth/refresh', async (req, res) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(401).json({ error: 'Refresh token required.' });
+  }
+
+  try {
+    const payload: any = jwt.verify(refreshToken, REFRESH_SECRET);
+    const db = await getDb();
+    const user = await db.get(
+      `SELECT id, username, email, full_name as fullName, profile_picture as profilePicture FROM users WHERE id = ?`,
+      [payload.id]
+    );
+
+    if (!user) {
+      return res.status(401).json({ error: 'User not found.' });
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: user.id, username: user.username, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    const newRefreshToken = jwt.sign({ id: user.id }, REFRESH_SECRET, { expiresIn: '7d' });
+
+    res.json({
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      user,
+    });
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid or expired refresh token. Please log in again.' });
+  }
+});
+
 // USERS MODULE
 
 // Suggested users to follow (must be before /:id route)

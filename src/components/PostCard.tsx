@@ -16,7 +16,7 @@ interface PostCardProps {
 }
 
 export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
-  const { token, user } = useAuth();
+  const { token, user, authFetch } = useAuth();
   
   // Like state
   const [likesCount, setLikesCount] = useState(post.likesCount);
@@ -36,6 +36,13 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
   const [editedCaption, setEditedCaption] = useState(post.caption);
   const [isUpdatingPost, setIsUpdatingPost] = useState(false);
 
+  // Reset edited caption when editing is closed
+  useEffect(() => {
+    if (!isEditing) {
+      setEditedCaption(post.caption);
+    }
+  }, [isEditing, post.caption]);
+
   const isOwner = user?.id === post.userId;
 
   // Sync isLiked and counts if the post prop changes
@@ -50,7 +57,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
     if (likeIsLoading) return;
 
     setLikeIsLoading(true);
-    // Optimistic UI updates
     const originalLiked = isLiked;
     const originalCount = likesCount;
 
@@ -61,20 +67,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
       const method = originalLiked ? 'DELETE' : 'POST';
       const endpoint = `/api/posts/${post.id}/${originalLiked ? 'unlike' : 'like'}`;
 
-      const res = await fetch(endpoint, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
+      const res = await authFetch(endpoint, { method });
       const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error);
-      }
+      if (!res.ok) throw new Error(data.error);
       setLikesCount(data.likesCount);
     } catch (err) {
-      // Revert if error
       setIsLiked(originalLiked);
       setLikesCount(originalCount);
     } finally {
@@ -85,7 +82,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
   const handleToggleComments = async () => {
     const nextShow = !showComments;
     setShowComments(nextShow);
-
     if (nextShow && comments.length === 0) {
       await fetchComments();
     }
@@ -113,16 +109,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
 
     setCommentError(null);
     try {
-      const res = await fetch('/api/comments', {
+      const res = await authFetch('/api/comments', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          postId: post.id,
-          commentText: newComment.trim(),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: post.id, commentText: newComment.trim() }),
       });
 
       const data = await res.json();
@@ -139,18 +129,11 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
   const handleDeleteComment = async (commentId: number) => {
     if (!token) return;
     try {
-      const res = await fetch(`/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
+      const res = await authFetch(`/api/comments/${commentId}`, { method: 'DELETE' });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error);
       }
-
       setComments((prev) => prev.filter((c) => c.id !== commentId));
       setCommentsCount((prev) => prev - 1);
     } catch (err) {
@@ -162,12 +145,9 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
     if (!token) return;
     setIsUpdatingPost(true);
     try {
-      const res = await fetch(`/api/posts/${post.id}`, {
+      const res = await authFetch(`/api/posts/${post.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ caption: editedCaption }),
       });
 
@@ -190,27 +170,17 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPostDeleted }) => {
     if (!window.confirm('Are you sure you want to delete this post? This cannot be undone.')) return;
 
     try {
-      const res = await fetch(`/api/posts/${post.id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
+      const res = await authFetch(`/api/posts/${post.id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error);
       }
-
-      if (onPostDeleted) {
-        onPostDeleted(post.id);
-      }
+      if (onPostDeleted) onPostDeleted(post.id);
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Render text caption with colored hashtag anchors
   const formatCaption = (text: string) => {
     if (!text) return '';
     const parts = text.split(/(\s+)/);

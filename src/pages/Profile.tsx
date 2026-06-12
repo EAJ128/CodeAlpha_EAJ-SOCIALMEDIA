@@ -14,7 +14,7 @@ export const Profile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const parsedUserId = parseInt(id || '0');
   
-  const { user: currentUser, token, updateCurrentUser } = useAuth();
+  const { user: currentUser, token, updateCurrentUser, authFetch } = useAuth();
   
   const [profile, setProfile] = useState<User | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -36,6 +36,15 @@ export const Profile: React.FC = () => {
   const [editWebsite, setEditWebsite] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileSaveError, setProfileSaveError] = useState<string | null>(null);
+
+  // Reset profile edit states to stored defaults when editing is closed
+  useEffect(() => {
+    if (!isEditingProfile && profile) {
+      setEditFullName(profile.fullName);
+      setEditBio(profile.bio || '');
+      setEditWebsite(profile.website || '');
+    }
+  }, [isEditingProfile, profile]);
 
   // Hidden file inputs
   const profilePicInputRef = useRef<HTMLInputElement>(null);
@@ -107,12 +116,7 @@ export const Profile: React.FC = () => {
       const endpoint = `/api/users/${isFollowing ? 'unfollow' : 'follow'}/${profile.id}`;
       const method = isFollowing ? 'DELETE' : 'POST';
 
-      const res = await fetch(endpoint, {
-        method,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const res = await authFetch(endpoint, { method });
 
       if (!res.ok) {
         const errorData = await res.json();
@@ -151,11 +155,8 @@ export const Profile: React.FC = () => {
     formData.append(type, file);
 
     try {
-      const res = await fetch(`/api/users/${currentUser.id}`, {
+      const res = await authFetch(`/api/users/${currentUser.id}`, {
         method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
         body: formData,
       });
 
@@ -187,12 +188,9 @@ export const Profile: React.FC = () => {
     setProfileSaveError(null);
 
     try {
-      const res = await fetch(`/api/users/${currentUser.id}`, {
+      const res = await authFetch(`/api/users/${currentUser.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           fullName: editFullName,
           bio: editBio,

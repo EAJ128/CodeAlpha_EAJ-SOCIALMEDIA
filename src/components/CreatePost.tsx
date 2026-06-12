@@ -13,7 +13,7 @@ interface CreatePostProps {
 }
 
 export const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
-  const { token, user } = useAuth();
+  const { token, user, authFetch } = useAuth();
   const [caption, setCaption] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -90,11 +90,8 @@ export const CreatePost: React.FC<CreatePostProps> = ({ onPostCreated }) => {
     }
 
     try {
-      const res = await fetch('/api/posts', {
+      const res = await authFetch('/api/posts', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
         body: formData,
       });
 
