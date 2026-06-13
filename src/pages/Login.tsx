@@ -2,43 +2,42 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AlertCircle, Lock, User, CheckCircle, Sparkles } from 'lucide-react';
-
 export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginIdentifier.trim() || !password) {
       setErrorMsg('Please supply all credentials to access EAJ Social.');
       return;
     }
-
     setIsLoading(true);
     setErrorMsg(null);
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ loginIdentifier, password }),
       });
-
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(text.substring(0, 100) || `Server returned status ${res.status}`);
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Failed to authenticate.');
       }
-
       login(data.accessToken, data.refreshToken, data.user);
       navigate('/');
     } catch (err: any) {
@@ -47,7 +46,6 @@ export const Login: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <div id="login-page-container" className="min-h-[calc(100vh-69px)] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950 font-sans">
       <div id="login-card-container" className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative transition-all duration-300">
@@ -62,7 +60,6 @@ export const Login: React.FC = () => {
             Access EAJ Social to see what's happening today in your space.
           </p>
         </div>
-
         {/* Content Area */}
         <div className="p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="space-y-4.5">
@@ -73,9 +70,8 @@ export const Login: React.FC = () => {
                 <span>{errorMsg}</span>
               </div>
             )}
-
             {/* Login Input Box */}
-            <div className="space-y-1.5ClassName">
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
                 Username or Email Address
               </label>
@@ -92,7 +88,6 @@ export const Login: React.FC = () => {
                 <User className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-slate-400" />
               </div>
             </div>
-
             {/* Password Input Box */}
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
@@ -113,7 +108,6 @@ export const Login: React.FC = () => {
                 <Lock className="absolute left-3.5 top-3.5 w-4.5 h-4.5 text-slate-400" />
               </div>
             </div>
-
             {/* Submission triggers */}
             <button
               id="login-submit-btn"
@@ -131,7 +125,6 @@ export const Login: React.FC = () => {
               )}
             </button>
           </form>
-
           {/* Spacer registration */}
           <div className="mt-8 text-center border-t border-slate-100 dark:border-slate-800 pt-6">
             <p className="text-xs sm:text-sm text-slate-550 dark:text-slate-400">
@@ -142,7 +135,6 @@ export const Login: React.FC = () => {
             </p>
           </div>
         </div>
-
       </div>
     </div>
   );
