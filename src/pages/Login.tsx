@@ -5,7 +5,8 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AlertCircle, Lock, User, CheckCircle, Sparkles } from 'lucide-react';
+import { AlertCircle, Lock, User, Sparkles } from 'lucide-react';
+
 export const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
